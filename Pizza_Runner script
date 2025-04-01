@@ -1,0 +1,181 @@
+---Creating the first table
+Create table Runners(
+"Runner_id" Int,
+"Registration_date" Date
+)
+---Populating the first table
+Insert into Runners VALUES
+(1,'2021-01-01'),
+(2,'2021-01-03'),
+(3,'2021-01-08'),
+(4,'2021-01-15')
+---Creating the second table
+Drop Table if exists Customer_Orders
+Create table Customer_Orders(
+"Order_id" Int,
+"Customer_id" Int,
+"Pizza_id" Int,
+"Exclusions" Varchar(4),
+"Extras" Varchar(4),
+"Order_time" Datetime
+)
+---Populating the second table
+Insert into Customer_Orders VALUES
+(1,'101','1',NULL,NULL,'2021-01-01 18:05:02'),
+(2,'101','1',NULL,NULL,'2021-01-01 19:00:52'),
+(3,'102','1',NULL,NULL,'2021-01-02 23:51:23'),
+(3,'102','2',NULL,NULL,'2021-01-02 23:51:23'),
+(4,'103','1',NULL,NULL,'2021-01-04 13:23:46'),
+(4,'103','1','4',NULL,'2021-01-04 13:23:46'),
+(4,'103','2','4',NULL,'2021-01-04 13:23:46'),
+(5,'104','1',NULL,NULL,'2021-01-08 21:00:29'),
+(6,'101','2',NULL,NULL,'2021-01-08 21:03:13'),
+(7,'105','2',NULL,'1','2021-01-08 21:20:29'),
+(8,'102','1',NULL,NULL,'2021-01-09 23:54:33'),
+(9,'103','1','4','5','2021-01-10 11:22:59'),
+(10,'104','1',NULL,NULL,'2021-01-11 18:34:49'),
+(10,'104','1','6','4','2021-01-11 18:34:49')
+---Creating the third table
+Drop Table if Exists Runner_orders
+Create Table Runner_orders(
+"Order_id" Int,
+"Runner_id" Int,
+"Pickup_time" Varchar(19),
+"Distance" Varchar(7),
+ "Duration" Varchar(10),
+"Cancellation" Varchar(23)
+)
+---Populating the table
+Insert into Runner_orders VALUES
+(1,1,'2021-01-01 18:15:34','20km','32 minutes',NULL),	 
+(2,1,'2021-01-01 19:10:54','20km','27 minutes',NULL),	 
+(3,1,'2021-01-03 00:12:37','13.4km','20 minutes',NULL),
+(4,2,'2021-01-04 13:53:03','23.4km','40',NULL),
+(5,3,'2021-01-08 21:10:57','10km','15',NULL),
+(6,3,NULL,NULL,NULL,'Restaurant Cancellation'),
+(7,2,'2020-01-08 21:30:45','25km','25mins',NULL),
+(8,2,'2020-01-10 00:15:02','23.4 km','15 minutes',NULL),
+(9,2,NULL,NULL,NULL,'Customer Cancellation'),
+(10,1,'2020-01-11 18:50:20','10km','10minutes',NULL)
+---Creating the fourth table
+Drop Table if exists Pizza_names
+Create Table Pizza_names(
+"Pizza_id" Int,
+"Pizza_name" Text
+)
+---Populating the Fourth table
+Insert into Pizza_names VALUES
+(1,'Meat Lovers'),
+(2,'Vegetarian')
+---Creating the Fifth table
+Drop Table if exists Pizza_recipes
+Create Table Pizza_recipes(
+"Pizza_id" Int,
+"Toppings" Text
+)
+---Populating the Fifth table
+Insert into Pizza_recipes VALUES
+(1,'1, 2, 3, 4, 5, 6, 8, 10'),
+(2, '4, 6, 7, 9, 11, 12')
+---Creating the Sixth Table
+Create Table Pizza_toppings(
+"Topping_id" Int,
+"Topping_name" Text
+)
+---Populating the sixth table
+Insert into Pizza_toppings VALUES
+(1,'Bacon'),
+(2,'BBQSauce'),
+(3,'Beef'),
+(4,'Cheese'),
+(5,'Chicken'),
+(6,'Mushrooms'),
+(7,'Onions'),
+(8,'Pepperoni'),
+(9,'Peppers'),
+(10,'Salami'),
+(11,'Tomatoes'),
+(12,'TomatoSauce')
+---Q1)How many pizzas were ordered?
+Select 
+COUNT(*)as Pizzas_ordered
+From Customer_Orders
+---Q2)How many unique customer orders were made?
+Select 
+Count (Distinct Order_id) as Unique_orders
+From Customer_orders
+---Q3)How many successful orders were delivered by each runner
+Select Runner_id,
+Count(Order_id) as Order_delivered
+From Runner_orders
+Where Pickup_time<>'NULL'
+Group by Runner_id
+---Q4)How many of each type of pizza was delivered?
+Select Pn.Pizza_name,
+COUNT(Co.Pizza_id) as Pizza_delivered
+From Runner_orders as Ro
+Inner Join Customer_Orders as Co on  Ro.Order_id=Co.Order_id
+Inner Join Pizza_names as Pn on Co.Pizza_id=Pn.Pizza_id
+Where Pickup_time IS NOT NULL
+Group by Pn.Pizza_name
+---Q5)How many Vegetarian and Meatlovers were ordered by each customer?
+Select Co.Customer_id, Pn.Pizza_name,
+COUNT(Co.Pizza_id) as Pizza_ordered
+From Customer_Orders as Co
+Inner Join Pizza_names as Pn on Co.Pizza_id=Pn.Pizza_id
+Group by Co.Customer_id,Pn.Pizza_name
+---Q6)What was the maximum number of pizzas delivered in a single order?
+Select Top 1
+Co.Order_id,
+---Pickup_time,
+Count (Co.Pizza_id) as Pizza_ordered 
+From Customer_Orders as Co
+Inner Join Runner_orders as Ro on Co.order_id=Ro.Order_id
+Where Pickup_time<> 'Null'
+Group by Co.Order_id
+Order by Count(Co.Pizza_id) DESC
+---Q7For each customer, how many delivered pizzas had at least 1 change and how many had no changes?
+Select Co.Customer_id,
+   Sum(Case 
+	     When (Exclusions Is not null AND Exclusions<>'Null')
+		 OR (Extras Is not null AND Extras<>'Null')
+		 Then 1
+		 Else 0
+		 End) as Changes,
+		 Sum(Case 
+	     When (Exclusions Is not null AND Exclusions<>'Null')
+		 OR (Extras Is not null AND Extras<>'Null')
+		 Then 0
+		 Else 1
+		 End) as No_Changes
+		 From Customer_Orders as Co
+		 Inner Join Runner_orders as Ro On Co.order_id=Ro.order_id
+		 Where Pickup_time<>'Null'
+		 Group by Co.Customer_id,Exclusions,Extras
+---Q8)How many pizzas were delivered that had both exclusions and extras?
+Select
+Count(Pizza_id) as Exclusions_Extras
+From Customer_Orders as Co
+Inner Join Runner_orders as Ro on Co.order_id=Ro.order_id
+Where Pickup_time<>'Null'
+And(Exclusions Is not null And Exclusions<>'Null')
+And (extras Is not null And Extras<>'Null')
+---Q9)What was the total volume of pizzas ordered for each hour of the day?
+Select
+DATEPART(HOUR,order_time) as hour,
+Count(Pizza_id) as Pizza_Ordered
+From Customer_Orders
+Group by DATEPART(HOUR,Order_time)
+---Q10)What was the volume of orders for each day of the week?
+Select
+DATENAME(WEEKDAY,Order_time)as Day,
+Count(Pizza_id) as Pizza_ordered
+From Customer_Orders
+Group by DATENAME(WEEKDAY,Order_time)
+
+
+
+
+
+
+
